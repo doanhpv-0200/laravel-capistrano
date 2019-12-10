@@ -1,0 +1,87 @@
+# config valid for current version and patch releases of Capistrano
+lock "~> 3.11.2"
+
+# Application name
+# Example: sun_test
+set :application, "APPLICATION_NAME"
+
+# Repository url, 
+# Example: git@github.com:doanhpv-0200/test-deploy.git
+set :repo_url, "git@github.com:USER_NAME/REPO_NAME.git"
+
+# Default branch is :master
+set :branch, ENV["branch"] || "master"
+
+# Fetch domain class from commandline arguments
+set :domain, ENV["domain"] || "All domain"
+
+# Fetch seeder class from commandline arguments
+set :seeders, ENV["seeders"] || "[]"
+
+=begin Deploy directory structure:
+/var/www/test-deploy
+├── current -> /var/www/test-deploy/releases/20191216080141
+├── releases
+│   ├── 20191216075447
+│   ├── 20191216075558
+│   ├── 20191216075711
+│   ├── 20191216075932
+│   └── 20191216080141
+├── repo
+│   ├── ....
+│   └── ....
+├── revisions.log
+└── shared
+    ├── ....
+    └── workspace 
+=end
+
+# Config for deploy path
+set :deploy_to, '/var/www/test-deploy'
+set :releases_dir, '/var/www/test-deploy/releases'
+
+# Default env for each server
+set :dotenv_file, '/PATH/TO/.env'
+# set :dotenv_domain1, '/PATH/TO/env.domain1'
+# set :dotenv_domain2, '/PATH/TO/env.domain2'
+# set :dotenv_domain3, '/PATH/TO/env.domain3'
+
+# Default value for keep_releases is 5
+set :keep_releases, 5
+
+set :workers_servers, []
+
+# Shared directories
+append :linked_dirs, 
+    'workspace/storage/framework',
+    'workspace/storage/logs'
+
+# Slack configure
+set :slackistrano, {
+    klass: Slackistrano::CustomMessaging,
+    channel: '#your-channel',
+    webhook: 'your-incoming-webhook-url'
+}
+
+# Configure for slack bot
+#set :slackistrano, {
+#    channel: '#your-channel',
+#    team: 'your-team-name',
+#    token: 'your-token'
+#}
+
+namespace :deploy do
+    after :updated, "laravel:configure_env"
+    after :updated, "composer:vendor_copy"
+    after :updated, "composer:install"
+    after :updated, "npm:npm_copy"
+    after :updated, "npm:install"
+    after :updated, "npm:run_prod"
+    after :updated, "laravel:migrate"
+    after :updated, "laravel:seed"
+    after :updated, "laravel:link_storage"
+    after :updated, "laravel:fix_permission"
+    after :updated, "laravel:optimize"
+    after :updated, "laravel:restart_queue"
+    after :finishing_rollback, "laravel:migrate_rollback"
+end
